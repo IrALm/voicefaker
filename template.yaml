@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Audio TTS Serverless API
+
+Globals:
+  Function:
+    Timeout: 60
+    Runtime: python3.11
+    MemorySize: 512
+
+Resources:
+
+  # =========================
+  # S3 BUCKET (pour IAM policies, pas besoin de créer réellement dans MinIO)
+  # =========================
+  AudioBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: my-audio-bucket
+
+  # =========================
+  # DYNAMODB TABLE
+  # =========================
+  AudioTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AudioFiles
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: file_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: file_id
+          KeyType: HASH
+
+  # =========================
+  # GENERATE AUDIO LAMBDA
+  # =========================
+  GenerateAudioFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: generate_voice_lambda.main
+      Environment:
+        Variables:
+          FASTAPI_TTS_URL: "http://fastapi-tts:8002"
+          AUDIO_BUCKET: "my-audio-bucket"
+          MINIO_ENDPOINT: "http://minio:9000"
+          MINIO_ACCESS_KEY: "minioadmin"
+          MINIO_SECRET_KEY: "minioadmin"
+          TABLE_NAME: AudioFiles
+      Policies:
+        - S3CrudPolicy:
+            BucketName: "my-audio-bucket"
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AudioTable
+      Events:
+        GenerateAPI:
+          Type: Api
+          Properties:
+            Path: /generate
+            Method: post
+
+  # =========================
+  # SAVE METADATA LAMBDA
+  # =========================
+  SaveMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: save_metadata_lambda.main
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AudioTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AudioTable
+
+  # =========================
+  # LIST FILES LAMBDA
+  # =========================
+  ListFilesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: list_files_lambda.main
+      Environment:
+        Variables:
+          AUDIO_BUCKET: "my-audio-bucket"
+          MINIO_ENDPOINT: "http://minio:9000"
+          MINIO_ACCESS_KEY: "minioadmin"
+          MINIO_SECRET_KEY: "minioadmin"
+      Policies:
+        - S3ReadPolicy:
+            BucketName: "my-audio-bucket"
+      Events:
+        ListAPI:
+          Type: Api
+          Properties:
+            Path: /files
+            Method: get
+
+  # =========================
+  # DOWNLOAD AUDIO LAMBDA
+  # =========================
+  DownloadAudioFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: download_audio_lambda.lambda_handler
+      Environment:
+        Variables:
+          AUDIO_BUCKET: "my-audio-bucket"
+          MINIO_ENDPOINT: "http://minio:9000"
+          MINIO_ACCESS_KEY: "minioadmin"
+          MINIO_SECRET_KEY: "minioadmin"
+      Policies:
+        - S3ReadPolicy:
+            BucketName: "my-audio-bucket"
+      Events:
+        DownloadAPI:
+          Type: Api
+          Properties:
+            Path: /download/{file_id}
+            Method: get
+
+Outputs:
+
+  ApiURL:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
