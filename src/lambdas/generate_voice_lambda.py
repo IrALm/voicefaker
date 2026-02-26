@@ -20,35 +20,90 @@ dynamodb = boto3.resource(
 )
 
 def main(event, context):
-    body = json.loads(event["body"])
-    text = body["text"]
-    lang = body["lang"]
-    voice = body["voice"]
+    try:
+        # Parse body
+        try:
+            body = json.loads(event["body"])
+        except (KeyError, json.JSONDecodeError):
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Body JSON invalide ou manquant"})
+            }
 
-    # 1 generate
-    r = requests.post(
-        f"{FASTAPI}/generate-audio/",
-        params={"text": text, "lang": lang, "voice": voice}
-    )
-    if r.status_code != 200:
-        return {"statusCode": r.status_code, "body": r.text}
-    filename = r.json()["filename"]
+        text = body.get("text")
+        lang = body.get("lang")
+        voice = body.get("voice")
 
-    # 2 download
-    audio = requests.get(f"{FASTAPI}/download-audio/{filename}")
+        # Validation des champs requis
+        missing = [f for f in ["text", "lang", "voice"] if not body.get(f)]
+        if missing:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": f"Champs manquants : {missing}"})
+            }
 
-    # 3 upload MinIO
-    s3.put_object(Bucket=BUCKET, Key=filename, Body=audio.content)
+        # 1 generate
+        r = requests.post(
+            f"{FASTAPI}/generate-audio/",
+            params={"text": text, "lang": lang, "voice": voice}
+        )
+        if r.status_code != 200:
+            return {
+                "statusCode": r.status_code,
+                "body": json.dumps({
+                    "error": "Erreur lors de la génération audio",
+                    "detail": r.json() if r.headers.get("content-type", "").startswith("application/json") else r.text
+                })
+            }
 
-    # 4 save metadata DynamoDB
-    dynamodb.Table("AudioFiles").put_item(Item={
-        "id": str(uuid.uuid4()),
-        "filename": filename,
-        "text": text,
-        "voice": voice,
-        "lang": lang,
-        "created_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S"),
-        "file_size_bytes": len(audio.content)
-    })
+        filename = r.json().get("filename")
+        if not filename:
+            return {
+                "statusCode": 502,
+                "body": json.dumps({"error": "Réponse FastAPI invalide : 'filename' manquant"})
+            }
 
-    return {"statusCode": 200, "body": json.dumps({"filename": filename})}
+        # 2 download
+        audio = requests.get(f"{FASTAPI}/download-audio/{filename}")
+        if audio.status_code != 200:
+            return {
+                "statusCode": 502,
+                "body": json.dumps({"error": f"Échec du téléchargement du fichier audio : {filename}"})
+            }
+
+        # 3 upload MinIO
+        try:
+            s3.put_object(Bucket=BUCKET, Key=filename, Body=audio.content)
+        except Exception as e:
+            return {
+                "statusCode": 502,
+                "body": json.dumps({"error": f"Échec de l'upload MinIO : {str(e)}"})
+            }
+
+        # 4 save metadata DynamoDB
+        try:
+            dynamodb.Table("AudioFiles").put_item(Item={
+                "id": str(uuid.uuid4()),
+                "filename": filename,
+                "text": text,
+                "voice": voice,
+                "lang": lang,
+                "created_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S"),
+                "file_size_bytes": len(audio.content)
+            })
+        except Exception as e:
+            return {
+                "statusCode": 502,
+                "body": json.dumps({"error": f"Échec de la sauvegarde DynamoDB : {str(e)}"})
+            }
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"filename": filename})
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": f"Erreur interne : {str(e)}"})
+        }
