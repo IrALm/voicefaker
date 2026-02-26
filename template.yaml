@@ -30,10 +30,10 @@ Resources:
       TableName: AudioFiles
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: file_id
+        - AttributeName: id
           AttributeType: S
       KeySchema:
-        - AttributeName: file_id
+        - AttributeName: id
           KeyType: HASH
 
   # =========================
@@ -51,6 +51,7 @@ Resources:
           MINIO_ENDPOINT: "http://minio:9000"
           MINIO_ACCESS_KEY: "minioadmin"
           MINIO_SECRET_KEY: "minioadmin"
+          DYNAMODB_ENDPOINT: "http://dynamodb:8000"
           TABLE_NAME: AudioFiles
       Policies:
         - S3CrudPolicy:
@@ -65,21 +66,6 @@ Resources:
             Method: post
 
   # =========================
-  # SAVE METADATA LAMBDA
-  # =========================
-  SaveMetadataFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/lambdas/
-      Handler: save_metadata_lambda.main
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref AudioTable
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref AudioTable
-
-  # =========================
   # LIST FILES LAMBDA
   # =========================
   ListFilesFunction:
@@ -89,13 +75,11 @@ Resources:
       Handler: list_files_lambda.main
       Environment:
         Variables:
-          AUDIO_BUCKET: "my-audio-bucket"
-          MINIO_ENDPOINT: "http://minio:9000"
-          MINIO_ACCESS_KEY: "minioadmin"
-          MINIO_SECRET_KEY: "minioadmin"
+          DYNAMODB_ENDPOINT: "http://dynamodb:8000"
+          TABLE_NAME: AudioFiles
       Policies:
-        - S3ReadPolicy:
-            BucketName: "my-audio-bucket"
+        - DynamoDBReadPolicy:
+            TableName: !Ref AudioTable
       Events:
         ListAPI:
           Type: Api

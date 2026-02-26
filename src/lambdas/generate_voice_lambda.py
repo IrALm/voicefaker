@@ -1,4 +1,5 @@
 import os, json, requests, boto3, uuid
+from datetime import datetime
 
 FASTAPI = os.environ["FASTAPI_TTS_URL"]
 BUCKET = os.environ["AUDIO_BUCKET"]
@@ -10,10 +11,16 @@ s3 = boto3.client(
     aws_secret_access_key=os.environ["MINIO_SECRET_KEY"]
 )
 
+dynamodb = boto3.resource(
+    "dynamodb",
+    endpoint_url=os.environ["DYNAMODB_ENDPOINT"],
+    region_name="us-east-1",
+    aws_access_key_id="dummy",
+    aws_secret_access_key="dummy"
+)
+
 def main(event, context):
-
     body = json.loads(event["body"])
-
     text = body["text"]
     lang = body["lang"]
     voice = body["voice"]
@@ -23,23 +30,25 @@ def main(event, context):
         f"{FASTAPI}/generate-audio/",
         params={"text": text, "lang": lang, "voice": voice}
     )
-
     if r.status_code != 200:
-        return {
-            "statusCode": r.status_code,
-            "body": r.text
-        }
-
+        return {"statusCode": r.status_code, "body": r.text}
     filename = r.json()["filename"]
 
     # 2 download
     audio = requests.get(f"{FASTAPI}/download-audio/{filename}")
 
     # 3 upload MinIO
-    s3.put_object(
-        Bucket=BUCKET,
-        Key=filename,
-        Body=audio.content
-    )
+    s3.put_object(Bucket=BUCKET, Key=filename, Body=audio.content)
 
-    return {"statusCode":200,"body":json.dumps({"filename":filename})}
+    # 4 save metadata DynamoDB
+    dynamodb.Table("AudioFiles").put_item(Item={
+        "id": str(uuid.uuid4()),
+        "filename": filename,
+        "text": text,
+        "voice": voice,
+        "lang": lang,
+        "created_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S"),
+        "file_size_bytes": len(audio.content)
+    })
+
+    return {"statusCode": 200, "body": json.dumps({"filename": filename})}

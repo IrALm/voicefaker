@@ -67,8 +67,8 @@ def create_table():
         print(f"Creating DynamoDB table: {TABLE_NAME}")
         dynamodb.create_table(
             TableName=TABLE_NAME,
-            KeySchema=[{"AttributeName": "file_id", "KeyType": "HASH"}],
-            AttributeDefinitions=[{"AttributeName": "file_id", "AttributeType": "S"}],
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
             BillingMode="PAY_PER_REQUEST",
         )
         waiter = dynamodb.get_waiter("table_exists")

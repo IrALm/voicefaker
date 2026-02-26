@@ -1,59 +1,54 @@
 import json
 import os
 import boto3
+from decimal import Decimal
 
 # =========================
-# ENV VARIABLES avec fallback
+# ENV VARIABLES
 # =========================
-MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", None)
-ACCESS = os.environ.get("MINIO_ACCESS_KEY", None)
-SECRET = os.environ.get("MINIO_SECRET_KEY", None)
-BUCKET = os.environ.get("AUDIO_BUCKET", "my-audio-bucket")
+DYNAMODB_ENDPOINT = os.environ.get("DYNAMODB_ENDPOINT", None)
+TABLE_NAME = os.environ.get("TABLE_NAME", "AudioFiles")
 
 # =========================
-# S3 / MinIO connection
+# DynamoDB connection
 # =========================
-s3_kwargs = {}
-if MINIO_ENDPOINT and ACCESS and SECRET:
-    s3_kwargs = {
-        "endpoint_url": MINIO_ENDPOINT,
-        "aws_access_key_id": ACCESS,
-        "aws_secret_access_key": SECRET
-    }
+dynamo_kwargs = {
+    "region_name": "us-east-1",
+    "aws_access_key_id": "dummy",
+    "aws_secret_access_key": "dummy"
+}
+if DYNAMODB_ENDPOINT:
+    dynamo_kwargs["endpoint_url"] = DYNAMODB_ENDPOINT
 
-s3 = boto3.client("s3", **s3_kwargs)
+dynamodb = boto3.resource("dynamodb", **dynamo_kwargs)
+
+# =========================
+# Decimal encoder
+# =========================
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return int(obj) if obj % 1 == 0 else float(obj)
+        return super().default(obj)
 
 # =========================
 # Lambda handler
 # =========================
 def main(event, context):
     try:
-        response = s3.list_objects_v2(Bucket=BUCKET)
+        table = dynamodb.Table(TABLE_NAME)
+        response = table.scan()
+        items = response.get("Items", [])
 
-        files = []
-
-        # Si bucket vide → pas de "Contents"
-        if "Contents" in response:
-            for obj in response["Contents"]:
-                files.append({
-                    "filename": obj["Key"],
-                    "size": obj["Size"],
-                    "last_modified": obj["LastModified"].isoformat()
-                })
+        while "LastEvaluatedKey" in response:
+            response = table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+            items.extend(response.get("Items", []))
 
         return {
             "statusCode": 200,
-            "body": json.dumps(files),
+            "body": json.dumps(items, cls=DecimalEncoder),  # ← modifié
             "headers": {"Content-Type": "application/json"}
         }
-
-    except s3.exceptions.NoSuchBucket:
-        return {
-            "statusCode": 404,
-            "body": json.dumps({"error": "Bucket not found"}),
-            "headers": {"Content-Type": "application/json"}
-        }
-
     except Exception as e:
         return {
             "statusCode": 500,
