@@ -44,9 +44,9 @@ dynamodb = boto3.client(
 def create_bucket():
     try:
         s3.head_bucket(Bucket=BUCKET_NAME)
-        print(f"S3 bucket already exists: {BUCKET_NAME}")
+        print(f"Le bucket S3 existe déjà : {BUCKET_NAME}")
     except ClientError:
-        print(f"Creating S3 bucket: {BUCKET_NAME}")
+        print(f"Création du bucket S3 : {BUCKET_NAME}")
         if REGION == "us-east-1":
             s3.create_bucket(Bucket=BUCKET_NAME)
         else:
@@ -54,7 +54,7 @@ def create_bucket():
                 Bucket=BUCKET_NAME,
                 CreateBucketConfiguration={"LocationConstraint": REGION},
             )
-        print("Bucket created")
+        print("Bucket créé avec succès")
 
 # =========================
 # CREATE DYNAMODB TABLE
@@ -62,9 +62,9 @@ def create_bucket():
 def create_table():
     try:
         dynamodb.describe_table(TableName=TABLE_NAME)
-        print(f"DynamoDB table already exists: {TABLE_NAME}")
+        print(f"La table DynamoDB existe déjà : {TABLE_NAME}")
     except dynamodb.exceptions.ResourceNotFoundException:
-        print(f"Creating DynamoDB table: {TABLE_NAME}")
+        print(f"Création de la table DynamoDB : {TABLE_NAME}")
         dynamodb.create_table(
             TableName=TABLE_NAME,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
@@ -73,7 +73,7 @@ def create_table():
         )
         waiter = dynamodb.get_waiter("table_exists")
         waiter.wait(TableName=TABLE_NAME)
-        print("Table created")
+        print("Table créée avec succès")
 
 # =========================
 # MAIN
@@ -81,4 +81,4 @@ def create_table():
 if __name__ == "__main__":
     create_bucket()
     create_table()
-    print("\nStorage initialized successfully 🚀")
+    print("\nStockage initialisé avec succès 🚀")
