@@ -111,6 +111,72 @@ Resources:
             Path: /download/{file_id}
             Method: get
 
+  # =========================
+  # STATS ACTIVITY LAMBDA
+  # =========================
+  StatsActivityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: stats_activity_lambda.main
+      Environment:
+        Variables:
+          DYNAMODB_ENDPOINT: "http://dynamodb:8000"
+          TABLE_NAME: AudioFiles
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AudioTable
+      Events:
+        StatsActivityAPI:
+          Type: Api
+          Properties:
+            Path: /stats/activity
+            Method: get
+
+  # =========================
+  # STATS LANGUAGES LAMBDA
+  # =========================
+  StatsLanguagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: stats_languages_lambda.main
+      Environment:
+        Variables:
+          DYNAMODB_ENDPOINT: "http://dynamodb:8000"
+          TABLE_NAME: AudioFiles
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AudioTable
+      Events:
+        StatsLanguagesAPI:
+          Type: Api
+          Properties:
+            Path: /stats/languages
+            Method: get
+
+  # =========================
+  # STATS VOICES LAMBDA
+  # =========================
+  StatsVoicesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: stats_voices_lambda.main
+      Environment:
+        Variables:
+          DYNAMODB_ENDPOINT: "http://dynamodb:8000"
+          TABLE_NAME: AudioFiles
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AudioTable
+      Events:
+        StatsVoicesAPI:
+          Type: Api
+          Properties:
+            Path: /stats/voices
+            Method: get
+
 Outputs:
   ApiURL:
     Description: "API Gateway endpoint URL"
