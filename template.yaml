@@ -7,11 +7,14 @@ Globals:
     Timeout: 60
     Runtime: python3.11
     MemorySize: 512
+  Api:
+    BinaryMediaTypes:
+      - audio/mpeg
+      - application/octet-stream
 
 Resources:
-
   # =========================
-  # S3 BUCKET (pour IAM policies, pas besoin de créer réellement dans MinIO)
+  # S3 BUCKET
   # =========================
   AudioBucket:
     Type: AWS::S3::Bucket
@@ -125,7 +128,6 @@ Resources:
             Method: get
 
 Outputs:
-
   ApiURL:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
