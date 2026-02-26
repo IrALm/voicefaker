@@ -2,7 +2,6 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# INSTALLER FFMPEG (OBLIGATOIRE POUR PYDUB)
 RUN apt-get update && apt-get install -y ffmpeg
 
 COPY requirements.txt .
