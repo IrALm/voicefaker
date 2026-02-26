@@ -1,1 +1,4 @@
 /.aws-sam/
+voicefaker-front/node_modules/
+voicefaker-front/.env
+voicefaker-front/package-lock.json

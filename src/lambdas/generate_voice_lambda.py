@@ -19,6 +19,13 @@ dynamodb = boto3.resource(
     aws_secret_access_key="dummy"
 )
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Content-Type": "application/json"
+}
+
 def main(event, context):
     try:
         # Parse body

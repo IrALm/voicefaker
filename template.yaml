@@ -8,6 +8,11 @@ Globals:
     Runtime: python3.11
     MemorySize: 512
   Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowOrigin: "'*'"
+      
     BinaryMediaTypes:
       - audio/mpeg
       - application/octet-stream

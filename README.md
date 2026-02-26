@@ -280,3 +280,42 @@ http://127.0.0.1:3000/stats/voices
   ]
 }
 ```
+
+# 📁 STRUCTURE DU FRONT-END — VOICEFAKER
+```json
+
+cd voicefaker-front
+npm install
+npm start
+
+```
+
+voicefaker-front/
+│
+├── public/
+│   └── index.html
+│
+├── src/
+│   ├── index.js                  # Point d'entrée React
+│   ├── App.jsx                   # Routing principal (4 vues)
+│   │
+│   ├── api/
+│   │   └── api.js                # Tous les appels axios vers SAM local
+│   │
+│   ├── components/
+│   │   ├── Navbar.jsx             # Barre de navigation latérale
+│   │   ├── AudioPlayer.jsx        # Lecteur audio + bouton téléchargement
+│   │   ├── VoiceCard.jsx          # Carte voix (style photo 2)
+│   │   ├── LangSelector.jsx       # Sélecteur langue + drapeau
+│   │   └── StatBar.jsx            # Barre de progression stats
+│   │
+│   ├── pages/
+│   │   ├── Generate.jsx           # Photo 1 : saisie texte + génération
+│   │   ├── Files.jsx              # Photo 3 : liste des fichiers générés
+│   │   └── Stats.jsx              # Photo 4 : stats (langue, voix, activité)
+│   │
+│   └── styles/
+│       └── globals.css            # Variables CSS, fonts, reset global
+│
+├── package.json
+└── .env                           # REACT_APP_API_URL=http://127.0.0.1:3000
