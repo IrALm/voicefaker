@@ -24,6 +24,12 @@ def main(event, context):
         params={"text": text, "lang": lang, "voice": voice}
     )
 
+    if r.status_code != 200:
+        return {
+            "statusCode": r.status_code,
+            "body": r.text
+        }
+
     filename = r.json()["filename"]
 
     # 2 download

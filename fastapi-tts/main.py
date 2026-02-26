@@ -8,7 +8,7 @@ import os
 app = FastAPI(title="TTS FastAPI")
 
 # Configuration
-AVAILABLE_VOICES = ["dark_vador", "robot", "cartoon" , "masculine_rock", "child"]
+AVAILABLE_VOICES = [ "default", "dark_vador", "robot", "cartoon" , "masculine_rock", "child"]
 AVAILABLE_LANGS = ["fr", "en", "es", "de", "it"]
 AUDIO_FOLDER = "generated_audio"
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
