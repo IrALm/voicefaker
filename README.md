@@ -280,42 +280,71 @@ http://127.0.0.1:3000/stats/voices
   ]
 }
 ```
+## 🖥️ Front-End — VoiceFaker UI
 
-# 📁 STRUCTURE DU FRONT-END — VOICEFAKER
-```json
+Interface React **dark glassmorphism** connectée aux lambdas SAM via Axios.
 
+### 🚀 Lancement
+
+```bash
 cd voicefaker-front
 npm install
-npm start
-
+npm start        # http://localhost:3000
 ```
 
+> ⚠️ Assurez-vous que SAM tourne sur `http://127.0.0.1:3000` avant de lancer le front.
+
+---
+
+### 📁 Structure des dossiers
+
+```
 voicefaker-front/
 │
 ├── public/
-│   └── index.html
+│   └── index.html                 # HTML racine
 │
 ├── src/
-│   ├── index.js                  # Point d'entrée React
-│   ├── App.jsx                   # Routing principal (4 vues)
+│   │
+│   ├── index.js                   # Point d'entrée React
+│   ├── App.jsx                    # Routing principal — 3 vues (React Router v6)
 │   │
 │   ├── api/
-│   │   └── api.js                # Tous les appels axios vers SAM local
+│   │   └── api.js                 # Centralisation des appels Axios → SAM local
 │   │
-│   ├── components/
-│   │   ├── Navbar.jsx             # Barre de navigation latérale
-│   │   ├── AudioPlayer.jsx        # Lecteur audio + bouton téléchargement
-│   │   ├── VoiceCard.jsx          # Carte voix (style photo 2)
-│   │   ├── LangSelector.jsx       # Sélecteur langue + drapeau
-│   │   └── StatBar.jsx            # Barre de progression stats
+│   ├── components/                # Composants réutilisables
+│   │   ├── Navbar.jsx             # Navigation latérale avec liens actifs
+│   │   ├── AudioPlayer.jsx        # Lecteur audio : waveform, seek, téléchargement
+│   │   ├── VoiceCard.jsx          # Grille de sélection des 6 effets vocaux
+│   │   ├── LangSelector.jsx       # Sélecteur de langue avec drapeaux
+│   │   └── StatBar.jsx            # Barre de progression animée pour les stats
 │   │
-│   ├── pages/
-│   │   ├── Generate.jsx           # Photo 1 : saisie texte + génération
-│   │   ├── Files.jsx              # Photo 3 : liste des fichiers générés
-│   │   └── Stats.jsx              # Photo 4 : stats (langue, voix, activité)
+│   ├── pages/                     # Vues principales
+│   │   ├── Generate.jsx           # Saisie texte → sélection langue/voix → génération → lecture
+│   │   ├── Files.jsx              # Liste des fichiers générés avec lecteur inline
+│   │   └── Stats.jsx              # Statistiques : activité, langues, voix
 │   │
 │   └── styles/
-│       └── globals.css            # Variables CSS, fonts, reset global
+│       └── globals.css            # Variables CSS, fonts (Syne + DM Mono), animations, reset
 │
-├── package.json
-└── .env                           # REACT_APP_API_URL=http://127.0.0.1:3000
+├── .env                           # REACT_APP_API_URL=http://127.0.0.1:3000
+└── package.json                   # Dépendances : React 18, React Router, Axios
+```
+
+---
+
+### 🧩 Pages & Fonctionnalités
+
+| Page | Route | Description |
+|---|---|---|
+| **Générer** | `/generate` | Sélection langue + voix, saisie texte, génération audio et lecture instantanée |
+| **Fichiers** | `/files` | Historique des générations avec lecteur audio inline et téléchargement |
+| **Statistiques** | `/stats` | Analyse des pics d'activité, langues et voix les plus demandées |
+
+---
+
+### 🔗 Variables d'environnement
+
+```env
+REACT_APP_API_URL=http://127.0.0.1:3000
+```
